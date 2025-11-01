@@ -48,7 +48,7 @@ async def upload_file(file: UploadFile = File(...)):
     suggestion = analyze_with_bedrock(kpi_data)
     result = simulate_optimization(kpi_data, suggestion)
 
-    return {"filename": file.filename, "agent_result": result}
+    return {"filename": file.filename, "simulation_optimization": result, "suggestion": suggestion}
     
     
 
@@ -60,7 +60,7 @@ def run_agent_on_simulated_data():
     kpi_json = load_kpi_data(source="api")
     suggestion = analyze_with_bedrock(kpi_json)
     result = simulate_optimization(kpi_json, suggestion)
-    return {"agent_result": result}
+    return {"simulation_optimization": result, "suggestion": suggestion}
 
 
 

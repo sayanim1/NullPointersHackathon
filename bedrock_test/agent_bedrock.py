@@ -181,26 +181,50 @@ def simulate_optimization(kpi_data: dict, suggestion: dict) -> dict:
     cells = deepcopy(kpi_data["cells"])
     target = suggestion.get("target_cell")
 
-    # Define simple rule-based improvements
+
+    # Define rule-based improvements
     for cell in cells:
         if cell["cell_id"] == target:
             param = suggestion.get("parameter_to_adjust", "").lower()
             val = suggestion.get("suggested_value")
 
             if param == "ttt":
-                # Example: shorter TTT reduces handover failures
+                # Adjusting Time-to-Trigger makes handovers more/less responsive
                 try:
                     new_ttt = int(val)
+                    old_ttt = cell.get("ttt", 320)
                     cell["ttt"] = new_ttt
-                    cell["hof"] = max(0, cell["hof"] - 2)
-                    cell["rlf"] = max(0, cell["rlf"] - 1)
+
+                    # The lower the TTT, the fewer HOF/RLF we expect
+                    hof_reduction = max(1, int((old_ttt - new_ttt) / 160) + random.randint(0,1))
+                    rlf_reduction = max(0, int((old_ttt - new_ttt) / 200) + random.randint(0,1))
+
+                    cell["hof"] = max(0, cell["hof"] - hof_reduction)
+                    cell["rlf"] = max(0, cell["rlf"] - rlf_reduction)
+                
+                    # Slight impact on load and RSRQ
+                    cell["load"] = max(0, round(cell["load"] - 0.02*hof_reduction, 2))
+                    cell["rsrq"] += round(0.5*hof_reduction, 1)
                 except Exception:
                     pass
+
             elif "hyst" in param:
-                # Example: optimized hysteresis stabilizes RSRQ
-                cell["a3_hyst"] = float(val)
-                cell["rsrq"] += 1.0  # slight improvement
-                cell["hof"] = max(0, cell["hof"] - 1)
+                # Adjusting A3 hysteresis affects RSRQ and HO stability
+                try:
+                    old_hyst = cell.get("a3_hyst", 2)
+                    new_hyst = float(val)
+                    cell["a3_hyst"] = new_hyst
+
+                    # Hysteresis change stabilizes RSRQ and slightly reduces HOF
+                    rsrq_change = round((old_hyst - new_hyst) * 0.5 + random.uniform(-0.2,0.2), 1)
+                    cell["rsrq"] += rsrq_change
+                    cell["hof"] = max(0, cell["hof"] - max(1, int(abs(old_hyst - new_hyst) * 1.5)))
+
+                    # Slight impact on RLF
+                    cell["rlf"] = max(0, cell["rlf"] - random.randint(0,1))
+                except Exception:
+                    pass
+
 
     result = {"before": kpi_data, "after": {"cells": cells}}
 
@@ -219,35 +243,28 @@ def simulate_optimization(kpi_data: dict, suggestion: dict) -> dict:
 #agent = Agent(tools=[load_kpi_data, analyze_with_bedrock])
 agent = Agent(tools=[load_kpi_data, analyze_with_bedrock, simulate_optimization])
 
+def run_bedrock_pipeline(source="api", file_path=None, num_cells=5):
+    """
+    Runs the end-to-end RAN optimization pipeline when triggered externally.
+    """
+    message = f"""
+    1. Load the KPI data from {source}.
+    2. Analyze it with Bedrock (Claude) to suggest an optimization.
+    3. Apply that optimization using the digital twin simulation.
+    """
 
-# ---------- Agent Task ----------
-# message = """
-# Load the KPI data and analyze it using Bedrock to suggest a handover optimization.
-# """
+    result = agent(message, verbose=False)
+    try:
+        output_text = result.content if hasattr(result, "content") else str(result)
+        print("\nFinal agent output:")
+        print(output_text)
+        return output_text
+    except Exception as e:
+        print(f"Could not print result cleanly: {e}")
+        return {"error": str(e)}
 
-# result = agent(message, verbose=False)
 
-# print("\n Final agent output:")
-# #print(json.dumps(result, indent=2))
-# # ---------- Agent Task ----------
-# message = """
-# Load the KPI data and analyze it using Bedrock to suggest a handover optimization.
-# """
-
-message = """
-1. Load the KPI data.
-2. Analyze it with Bedrock (Claude) to suggest an optimization.
-3. Apply that optimization using the digital twin simulation.
-"""
-
-result = agent(message, verbose=False)
-
-# Handle AgentResult object safely
-try:
-    # Strands AgentResult stores model reply under .content
-    output_text = result.content if hasattr(result, "content") else str(result)
-    print("\nFinal agent output:")
-    print(output_text)
-except Exception as e:
-    print(f"Could not print result cleanly: {e}")
+# Optional: Only run when executed directly (not imported)
+if __name__ == "__main__":
+    run_bedrock_pipeline()
 
