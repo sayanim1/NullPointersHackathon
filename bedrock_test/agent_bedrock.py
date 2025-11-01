@@ -17,7 +17,7 @@ def load_kpi_data() -> dict:
     file_path = DATA_DIR / "sample_kpi.json"
     with open(file_path, "r") as f:
         data = json.load(f)
-    print(f"📡 Loaded KPI data from {file_path}")
+    print(f"Loaded KPI data from {file_path}")
     return data
 
 
@@ -46,13 +46,13 @@ def analyze_with_bedrock(kpi_data: dict) -> dict:
     """
 
     response = bedrock.converse(
-        modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+        modelId="anthropic.claude-3-5-sonnet-20240620-v1:0",
         messages=[{"role": "user", "content": [{"text": prompt}]}],
-        inferenceConfig={"maxTokens": 400, "temperature": 0.4}
+        inferenceConfig={"maxTokens": 2000, "temperature": 0.4}
     )
 
     ai_text = response["output"]["message"]["content"][0]["text"]
-    print("🧠 Claude suggestion received:")
+    print("Claude suggestion received:")
     print(ai_text)
 
     try:
@@ -65,7 +65,7 @@ def analyze_with_bedrock(kpi_data: dict) -> dict:
     out_file = OUTPUT_DIR / f"recommendation_{timestamp}.json"
     with open(out_file, "w") as f:
         json.dump(suggestion, f, indent=2)
-    print(f"💾 Saved recommendation to {out_file}")
+    print(f"Saved recommendation to {out_file}")
 
     return suggestion
 
@@ -104,7 +104,7 @@ def simulate_optimization(kpi_data: dict, suggestion: dict) -> dict:
                 cell["hof"] = max(0, cell["hof"] - 1)
 
     result = {"before": kpi_data, "after": {"cells": cells}}
-    print("🧩 Digital Twin simulation applied.")
+    print("Digital Twin simulation applied.")
     return result
 
 
@@ -121,7 +121,7 @@ agent = Agent(tools=[load_kpi_data, analyze_with_bedrock, simulate_optimization]
 
 # result = agent(message, verbose=False)
 
-# print("\n🤖 Final agent output:")
+# print("\n Final agent output:")
 # #print(json.dumps(result, indent=2))
 # # ---------- Agent Task ----------
 # message = """
@@ -140,8 +140,8 @@ result = agent(message, verbose=False)
 try:
     # Strands AgentResult stores model reply under .content
     output_text = result.content if hasattr(result, "content") else str(result)
-    print("\n🤖 Final agent output:")
+    print("\nFinal agent output:")
     print(output_text)
 except Exception as e:
-    print(f"⚠️ Could not print result cleanly: {e}")
+    print(f"Could not print result cleanly: {e}")
 
