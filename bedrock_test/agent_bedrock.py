@@ -4,6 +4,13 @@ from pathlib import Path
 from strands import Agent, tool
 import requests
 from copy import deepcopy
+import random
+import datetime
+
+
+ttt_choices = [160, 320, 480, 640]
+slice_types = ["eMBB", "URLLC", "mMTC"]
+handover_failure_causes = ["LowRSRP", "TargetBusy", "Other"]
 
 # ---------- Paths ----------
 DATA_DIR = Path(__file__).parent / "data"
@@ -38,29 +45,82 @@ def load_kpi_data(source: str = "api", file_path: str = None, num_cells: int = 5
             return {"cells":[]}
         
     if source == "api":        
-        api_url = "http://127.0.0.1:8000/generate_dataset?num_cells={num_cells}"
-        try:
-            response  = requests.get(api_url)
-
-            if response.status_code == 200:
-                data = response.json()
-                print(f"Called KPI data from FastAPI simulator: {len(data['cells'])} cells")
-                return data
-            else:
-                print(f"Failed to fetch KPI data, status code: {response.status_code}")
-                return {"cells": []}
-        except Exception as e:
-            print(f"Error calling simulation API: {e}")
-            return {"cells": []}
-
-    #file_path = DATA_DIR / "sample_kpi.json"
-    #with open(file_path, "r") as f:
-    #    data = json.load(f)
-    #print(f"Loaded KPI data from {file_path}")
-    #return data
+        return get_dataset(num_cells)
 
 
-# ---------- Tool 2: Analyze data with Claude on Bedrock ----------
+def generate_dataset(num_cells: int = 5):
+    data = {"cells": []}
+
+    for i in range(1, num_cells + 1):
+        # Original features
+        rsrp = round(random.uniform(-115, -70), 1)
+        rsrq = round(random.uniform(-20, -5), 1)
+        sinr = round(random.uniform(max(-5, (rsrp + 120) / 2), 30), 1)
+        load = round(random.uniform(0.3, 0.95), 2)
+        hof = min(8, max(0, int((load - 0.6) * 20 + random.gauss(2, 1))))
+        rlf = min(5, max(0, int((-rsrp - 90) / 10 + random.gauss(1, 0.5))))
+        a3_hyst = random.randint(1, 4)
+        ttt = random.choice(ttt_choices)
+
+        # New additional features
+        cell_load = round(random.uniform(10, 100), 2)  # in percentage
+        active_ues = random.randint(1, 100)
+        prb_utilization = round(random.uniform(10, 100), 2)
+        avg_throughput_dl = round(random.uniform(1, 500), 2)
+        avg_throughput_ul = round(random.uniform(1, 100), 2)
+        cqi = random.randint(1, 15)
+        handover_success_rate = round(random.uniform(80, 100), 2)
+        avg_time_between_handover = round(random.uniform(5, 120), 2)
+        handover_failure_cause = random.choice(handover_failure_causes)
+        rsrp_delta = round(random.uniform(-5, 5), 2)
+        sinr_trend = random.choice(["Increasing", "Decreasing", "Stable"])
+        neighbor_count = random.randint(1, 6)
+        strong_neighbor_count = random.randint(0, neighbor_count)
+        avg_neighbor_rsrp = round(random.uniform(-110, -70), 2)
+        slice_type = random.choice(slice_types)
+        slice_load = round(random.uniform(0, 100), 2)
+        qos_violation_count = random.randint(0, 5)
+        timestamp = datetime.datetime.now().isoformat()
+
+        cell = {
+            "cell_id": f"C{i:03d}",
+            "rsrq": rsrq,
+            "rsrp": rsrp,
+            "sinr": sinr,
+            "hof": hof,
+            "rlf": rlf,
+            "load": load,
+            "a3_hyst": a3_hyst,
+            "ttt": ttt,
+            "cell_load": cell_load,
+            "active_ues": active_ues,
+            "prb_utilization": prb_utilization,
+            "avg_throughput_dl": avg_throughput_dl,
+            "avg_throughput_ul": avg_throughput_ul,
+            "cqi": cqi,
+            "handover_success_rate": handover_success_rate,
+            "avg_time_between_handover": avg_time_between_handover,
+            "handover_failure_cause": handover_failure_cause,
+            "rsrp_delta": rsrp_delta,
+            "sinr_trend": sinr_trend,
+            "neighbor_count": neighbor_count,
+            "strong_neighbor_count": strong_neighbor_count,
+            "avg_neighbor_rsrp": avg_neighbor_rsrp,
+            "slice_type": slice_type,
+            "slice_load": slice_load,
+            "qos_violation_count": qos_violation_count,
+            "timestamp": timestamp
+        }
+
+        data["cells"].append(cell)
+
+    return data
+
+def get_dataset(num_cells: int = 5):
+    return generate_dataset(num_cells)
+
+
+# Analyze data with Claude on Bedrock 
 @tool
 def analyze_with_bedrock(kpi_data: dict) -> dict:
     """
