@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 import random
 import datetime
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, Body, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from agent_bedrock import load_kpi_data, analyze_with_bedrock, simulate_optimization
 
 app = FastAPI(title="Realistic RAN Data Generator API")
 
@@ -36,7 +37,6 @@ async def upload_file(file: UploadFile = File(...)):
     
     # Read content
     content = await file.read()
-    
     # Check file size
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
@@ -44,13 +44,29 @@ async def upload_file(file: UploadFile = File(...)):
             detail="File too large. Maximum allowed size is 1 MB."
         )
     
-    # Need to integrate Bedrock agent / RAN optimizer 
-    result = {
-        "filename": file.filename,
-        "status": "processed",
-        "data_length": len(content)
-    }
-    return result
+    temp_file_path = f"data/{file.filename}"
+    with open(temp_file_path, "wb") as f:
+        f.write(content)
+
+    # Run agent workflow on uploaded file
+    kpi_data = load_kpi_data(source="file", file_path=temp_file_path)
+    suggestion = analyze_with_bedrock(kpi_data)
+    result = simulate_optimization(kpi_data, suggestion)
+
+    return {"filename": file.filename, "agent_result": result}
+    
+    
+
+@app.post("/run_agent")
+def run_agent_on_json(kpi_json: dict = Body(...)):
+    """
+    Accept KPI JSON in the request body, run Bedrock + simulation,
+    and return before/after results.
+    """
+    suggestion = analyze_with_bedrock(kpi_json)
+    result = simulate_optimization(kpi_json, suggestion)
+    return {"agent_result": result}
+
 
 def generate_dataset(num_cells: int = 5):
     data = {"cells": []}

@@ -12,14 +12,14 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 # ---------- Tool 1: Load KPI data from file ----------
 @tool
-def load_kpi_data(source: str = "simulator", file_path: str = None, num_cells: int = 5) -> dict:
+def load_kpi_data(source: str = "api", file_path: str = None, num_cells: int = 5) -> dict:
     """
     Loads KPI data from either:
     1. Live simulator API (default)
     2. Uploaded JSON/CSV file
     """
 
-    if source == "file":
+    if source == "file" and file_path:
         if not file_path:
             print("No file path provided for KPI data")
             return {"cells": []}
@@ -27,9 +27,7 @@ def load_kpi_data(source: str = "simulator", file_path: str = None, num_cells: i
             with open(file_path, "r") as f:
                 if file_path.endswith(".json"):
                     data = json.load(f)
-
                 else:
-
                     import pandas as pd
                     df = pd.read_csv(f)
                     data = {"cells": df.to_dict(orient="records")}
@@ -39,20 +37,21 @@ def load_kpi_data(source: str = "simulator", file_path: str = None, num_cells: i
             print(f"Failed to load KPI file: {e}")
             return {"cells":[]}
         
-    api_url = "http://127.0.0.1:8000/generate_dataset?mnum_cells=5"
-    try:
-        response  = requests.get(api_url)
+    if source == "api":        
+        api_url = "http://127.0.0.1:8000/generate_dataset?num_cells={num_cells}"
+        try:
+            response  = requests.get(api_url)
 
-        if response.status_code == 200:
-            data = response.json()
-            print(f"Called KPI data from FastAPI simulator: {len(data['cells'])} cells")
-            return data
-        else:
-            print(f"Failed to fetch KPI data, status code: {response.status_code}")
+            if response.status_code == 200:
+                data = response.json()
+                print(f"Called KPI data from FastAPI simulator: {len(data['cells'])} cells")
+                return data
+            else:
+                print(f"Failed to fetch KPI data, status code: {response.status_code}")
+                return {"cells": []}
+        except Exception as e:
+            print(f"Error calling simulation API: {e}")
             return {"cells": []}
-    except Exception as e:
-        print(f"Error calling simulation API: {e}")
-        return {"cells": []}
 
     #file_path = DATA_DIR / "sample_kpi.json"
     #with open(file_path, "r") as f:
