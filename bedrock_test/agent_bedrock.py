@@ -131,7 +131,7 @@ def analyze_with_bedrock(kpi_data: dict) -> dict:
     prompt = f"""
     You are a telecom RAN optimization expert.
     Analyze this KPI JSON and identify cells showing degraded performance
-    (high HOF/RLF or low RSRQ). Propose ONE adjustment to A3 hysteresis or TTT
+    (high HOF/RLF or low RSRQ). Propose adjustments to improve the initial metrics given as an input
     and return concise JSON:
     {{
       "target_cell": "...",
@@ -187,6 +187,7 @@ def simulate_optimization(kpi_data: dict, suggestion: dict) -> dict:
         if cell["cell_id"] == target:
             param = suggestion.get("parameter_to_adjust", "").lower()
             val = suggestion.get("suggested_value")
+            print("Suggested values********************"+ val)
 
             if param == "ttt":
                 # Adjusting Time-to-Trigger makes handovers more/less responsive

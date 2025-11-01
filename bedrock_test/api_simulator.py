@@ -17,7 +17,7 @@ app.add_middleware(
 MAX_FILE_SIZE = 1 * 1024 * 1024
 
 # Supported file extensions
-ALLOWED_EXTENSIONS = {".csv", ".json", ".txt"}
+ALLOWED_EXTENSIONS = {".json"}
 
 
 @app.post("/upload")
