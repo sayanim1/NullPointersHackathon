@@ -2,6 +2,7 @@
 import json, boto3, datetime
 from pathlib import Path
 from strands import Agent, tool
+import requests
 
 # ---------- Paths ----------
 DATA_DIR = Path(__file__).parent / "data"
@@ -14,18 +15,29 @@ def load_kpi_data() -> dict:
     """
     Loads KPI data from /data/sample_kpi.json
     """
-    file_path = DATA_DIR / "sample_kpi.json"
-    with open(file_path, "r") as f:
-        data = json.load(f)
-    print(f"Loaded KPI data from {file_path}")
-    return data
+    api_url = "http://127.0.0.1:8000/generate_dataset?mnum_cells=5"
+    response  = requests.get(api_url)
+
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Called KPI data from FastAPI simulator: {len(data['cells'])} cells")
+        return data
+    else:
+        print(f"Failed to fetch KPI data, status code: {response.status_code}")
+        return {"cells": []}
+
+    #file_path = DATA_DIR / "sample_kpi.json"
+    #with open(file_path, "r") as f:
+    #    data = json.load(f)
+    #print(f"Loaded KPI data from {file_path}")
+    #return data
 
 
 # ---------- Tool 2: Analyze data with Claude on Bedrock ----------
 @tool
 def analyze_with_bedrock(kpi_data: dict) -> dict:
     """
-    Sends KPI data to Claude 3 Sonnet and saves the suggestion.
+    Sends KPI data to Claude 3.5 Sonnet and saves the suggestion.
     """
     bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
 
