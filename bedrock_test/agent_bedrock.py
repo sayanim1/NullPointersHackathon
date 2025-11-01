@@ -116,6 +116,13 @@ def simulate_optimization(kpi_data: dict, suggestion: dict) -> dict:
                 cell["hof"] = max(0, cell["hof"] - 1)
 
     result = {"before": kpi_data, "after": {"cells": cells}}
+
+    # Save the before/after result
+    timestamp = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    out_file = OUTPUT_DIR / f"simulation_result_{timestamp}.json"
+    with open(out_file, "w") as f:
+        json.dump(result, f, indent=2)
+
     print("Digital Twin simulation applied.")
     return result
 
@@ -141,9 +148,9 @@ agent = Agent(tools=[load_kpi_data, analyze_with_bedrock, simulate_optimization]
 # """
 
 message = """
-1. Load the KPI data.
-2. Analyze it with Bedrock (Claude) to suggest an optimization.
-3. Apply that optimization using the digital twin simulation.
+1. Loading the KPI data.
+2. Analyzing it to suggest an optimization.
+3. Applying that optimization using the digital twin simulation.
 """
 
 result = agent(message, verbose=False)
