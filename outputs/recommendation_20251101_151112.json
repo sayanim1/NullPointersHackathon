@@ -1,3 +1,0 @@
-{
-  "raw_text": "Based on the provided KPI data, cell C002 shows degraded performance with high handover failures (HOF) and radio link failures (RLF), as well as lower RSRQ compared to the other cells. To improve its performance, I suggest adjusting the Time-To-Trigger (TTT) parameter. Here's the proposed adjustment in JSON format:\n\n{\n  \"target_cell\": \"C002\",\n  \"parameter_to_adjust\": \"ttt\",\n  \"suggested_value\": \"320\",\n  \"reason\": \"Reduce TTT to improve handover performance and decrease HOF/RLF rates in a highly loaded cell with poor signal quality\"\n}\n\nThis adjustment aims to make handovers more responsive in C002, potentially reducing the number of handover and radio link failures in this challenging cell environment."
-}

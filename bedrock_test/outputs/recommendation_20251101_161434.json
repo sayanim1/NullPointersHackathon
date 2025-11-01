@@ -1,3 +1,0 @@
-{
-  "raw_text": "Based on the provided KPI data, I've analyzed the cells and identified C003 as showing degraded performance due to a high number of handover failures (HOF). Here's the proposed adjustment in JSON format:\n\n{\n  \"target_cell\": \"C003\",\n  \"parameter_to_adjust\": \"a3_hyst\",\n  \"suggested_value\": \"2\",\n  \"reason\": \"High HOF (6) indicates premature handovers. Reducing A3 hysteresis from 4 to 2 dB should decrease unnecessary handovers and improve handover success rate.\"\n}\n\nThis adjustment aims to address the high number of handover failures in C003 by making handovers less aggressive, which should help improve the cell's overall performance and reduce unnecessary handovers."
-}

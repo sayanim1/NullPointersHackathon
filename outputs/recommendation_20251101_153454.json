@@ -1,3 +1,0 @@
-{
-  "raw_text": "Based on the provided KPI data, I've analyzed the cells and identified C004 as showing degraded performance due to a high number of handover failures (HOF). Here's my recommendation:\n\n{\n  \"target_cell\": \"C004\",\n  \"parameter_to_adjust\": \"ttt\",\n  \"suggested_value\": \"480\",\n  \"reason\": \"High HOF count (7) with long TTT (640ms). Reducing TTT to 480ms may improve handover timing and reduce failures.\"\n}\n\nThis adjustment aims to address the high handover failure rate in C004 by making the handover process more responsive to changing radio conditions. Lowering the Time-to-Trigger (TTT) from 640ms to 480ms should help initiate handovers more quickly when needed, potentially reducing the number of handover failures."
-}

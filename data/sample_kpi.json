@@ -1,7 +1,0 @@
-{
-  "cells": [
-    {"cell_id": "C001", "rsrq": -9, "rsrp": -87, "hof": 4, "rlf": 2, "load": 0.75, "a3_hyst": 2, "ttt": 320},
-    {"cell_id": "C002", "rsrq": -12, "rsrp": -91, "hof": 7, "rlf": 4, "load": 0.82, "a3_hyst": 3, "ttt": 480},
-    {"cell_id": "C003", "rsrq": -7, "rsrp": -80, "hof": 2, "rlf": 1, "load": 0.60, "a3_hyst": 2, "ttt": 320}
-  ]
-}
