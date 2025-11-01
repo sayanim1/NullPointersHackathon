@@ -1,12 +1,56 @@
 from fastapi import FastAPI
 import random
 import datetime
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Realistic RAN Data Generator API")
+
+# Allow requests from Streamlit frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Max file size in bytes (1 MB)
+MAX_FILE_SIZE = 1 * 1024 * 1024
+
+# Supported file extensions
+ALLOWED_EXTENSIONS = {".csv", ".json", ".txt"}
 
 ttt_choices = [160, 320, 480, 640]
 slice_types = ["eMBB", "URLLC", "mMTC"]
 handover_failure_causes = ["LowRSRP", "TargetBusy", "Other"]
+
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    # Check file extension
+    ext = file.filename.lower().rsplit(".", 1)[-1]
+    if f".{ext}" not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Supported formats: {', '.join(ALLOWED_EXTENSIONS)}"
+        )
+    
+    # Read content
+    content = await file.read()
+    
+    # Check file size
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail="File too large. Maximum allowed size is 1 MB."
+        )
+    
+    # Need to integrate Bedrock agent / RAN optimizer 
+    result = {
+        "filename": file.filename,
+        "status": "processed",
+        "data_length": len(content)
+    }
+    return result
 
 def generate_dataset(num_cells: int = 5):
     data = {"cells": []}
