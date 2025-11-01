@@ -1,6 +1,0 @@
-{
-  "target_cell": "C002",
-  "parameter_to_adjust": "a3_hyst",
-  "suggested_value": 4,
-  "reason": "Cell C002 has high HOF (7) and RLF (4) values, indicating degraded performance. Increasing the A3 hysteresis margin can help reduce unnecessary handovers and improve mobility robustness."
-}
