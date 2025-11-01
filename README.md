@@ -50,3 +50,7 @@ NullPointersHackathon
       - Upload File: Upload .json dataset
     * Click on the Run Optimization
 
+# Screenshot
+## 📊 Demo Screenshot
+
+![Dashboard Screenshot](NullPointersSS.jpeg)

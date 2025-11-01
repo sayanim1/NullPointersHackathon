@@ -1,0 +1,3 @@
+{
+  "raw_text": "Based on the provided KPI data, I've analyzed the cells and identified the following recommendation:\n\n{\n  \"target_cell\": \"C001\",\n  \"parameter_to_adjust\": \"a3_hyst\",\n  \"suggested_value\": \"3\",\n  \"reason\": \"High HOF (6) and RLF (3) indicate handover issues. Increasing A3 hysteresis from 2 to 3 dB may reduce unnecessary handovers and improve stability.\"\n}\n\nThis adjustment aims to address the handover performance issues in cell C001, which shows the highest combined HOF and RLF values among the provided cells. Increasing the A3 hysteresis should help reduce ping-pong effects and potentially improve the overall handover success rate."
+}
