@@ -14,20 +14,25 @@ st.write("Upload a dataset or simulate data to get optimization insights powered
 option = st.radio("Select Mode:", ["Upload Dataset", "Simulate Data"])
 
 def display_result(data):
-    """Display only the 'after' optimization KPI data."""
-    
+    """Display Claude suggestion and after-optimization KPI table."""
+
+    if "filename" in data:
+        st.subheader("📂 File Processed:")
+        st.write(f"**{data['filename']}**")
+
+    if "suggestion" in data:
+        suggestion_text = data["suggestion"].get("raw_text", "")
+        if suggestion_text:
+            st.subheader("Bedrock Suggestion:")
+            st.info(suggestion_text)
+
     if "simulation_optimization" in data:
         sim_data = data["simulation_optimization"]
         after_cells = sim_data.get("after", {}).get("cells", [])
-        
         if after_cells:
-            st.subheader("After Optimization")
+            st.subheader("After Optimization (Targeted KPI Improvements)")
             after_df = pd.DataFrame(after_cells)
             st.dataframe(after_df, use_container_width=True)
-        else:
-            st.info("No 'after' optimization data available.")
-    else:
-        st.info("Simulation optimization data not found in response.")
 
 # Upload Dataset Mode
 if option == "Upload Dataset":
@@ -41,7 +46,7 @@ if option == "Upload Dataset":
         if size > 1 * 1024 * 1024:
             st.error("File too large. Maximum allowed size is 1 MB.")
         else:
-            if st.button("🚀 Run Optimization"):
+            if st.button("Run Optimization"):
                 with st.spinner("Running Bedrock optimization..."):
                     try:
                         files = {"file": (uploaded_file.name, uploaded_file, "application/octet-stream")}
