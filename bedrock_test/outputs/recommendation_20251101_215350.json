@@ -1,0 +1,3 @@
+{
+  "raw_text": "After analyzing the KPI data, I've identified cells showing degraded performance and propose the following adjustment:\n\n{\n  \"target_cell\": \"C001\",\n  \"parameter_to_adjust\": \"a3_hyst\",\n  \"suggested_value\": \"2\",\n  \"reason\": \"High HOF (6) and low RSRQ (-14.1). Increasing A3 hysteresis from 1 to 2 may reduce unnecessary handovers and improve RSRQ.\"\n}\n\nThis adjustment targets Cell C001, which shows the most concerning combination of high handover failures (HOF) and low RSRQ. Increasing the A3 hysteresis should help stabilize connections and potentially improve signal quality by reducing ping-pong effects between cells."
+}
