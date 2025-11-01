@@ -1,49 +1,48 @@
 # agent_bedrock.py
-import json, boto3
+import json, boto3, datetime
+from pathlib import Path
 from strands import Agent, tool
 
-# ---------- Tool 1: Simulated KPI data ----------
+# ---------- Paths ----------
+DATA_DIR = Path(__file__).parent / "data"
+OUTPUT_DIR = Path(__file__).parent / "outputs"
+OUTPUT_DIR.mkdir(exist_ok=True)
+
+# ---------- Tool 1: Load KPI data from file ----------
 @tool
-def get_kpi_data() -> dict:
+def load_kpi_data() -> dict:
     """
-    Returns simulated RAN KPI data.
-    Replace this later with real or sandbox data.
+    Loads KPI data from /data/sample_kpi.json
     """
-    data = {
-        "cells": [
-            {"cell_id": "C001", "rsrq": -9, "rsrp": -87, "hof": 4, "rlf": 2, "load": 0.75, "a3_hyst": 2, "ttt": 320},
-            {"cell_id": "C002", "rsrq": -12, "rsrp": -91, "hof": 7, "rlf": 4, "load": 0.82, "a3_hyst": 3, "ttt": 480},
-            {"cell_id": "C003", "rsrq": -7, "rsrp": -80, "hof": 2, "rlf": 1, "load": 0.60, "a3_hyst": 2, "ttt": 320}
-        ]
-    }
-    print("📡 Loaded KPI data")
+    file_path = DATA_DIR / "sample_kpi.json"
+    with open(file_path, "r") as f:
+        data = json.load(f)
+    print(f"📡 Loaded KPI data from {file_path}")
     return data
 
 
-# ---------- Tool 2: Call Claude 3 Sonnet on Bedrock ----------
+# ---------- Tool 2: Analyze data with Claude on Bedrock ----------
 @tool
-def analyze_with_bedrock(kpi_data: dict) -> str:
+def analyze_with_bedrock(kpi_data: dict) -> dict:
     """
-    Sends KPI data to Claude 3 Sonnet (Bedrock) for optimization suggestions.
+    Sends KPI data to Claude 3 Sonnet and saves the suggestion.
     """
     bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
 
     prompt = f"""
     You are a telecom RAN optimization expert.
-    Here is the current KPI data (JSON):
-
-    {json.dumps(kpi_data, indent=2)}
-
-    Based on the data, identify any cells showing degraded performance
-    (high HOF/RLF or poor RSRQ/RSRP) and propose ONE safe handover parameter
-    adjustment (A3 hysteresis or TTT) with reasoning. 
-    Respond in concise JSON:
+    Analyze this KPI JSON and identify cells showing degraded performance
+    (high HOF/RLF or low RSRQ). Propose ONE adjustment to A3 hysteresis or TTT
+    and return concise JSON:
     {{
       "target_cell": "...",
       "parameter_to_adjust": "...",
       "suggested_value": "...",
       "reason": "..."
     }}
+
+    KPI Data:
+    {json.dumps(kpi_data, indent=2)}
     """
 
     response = bedrock.converse(
@@ -52,20 +51,97 @@ def analyze_with_bedrock(kpi_data: dict) -> str:
         inferenceConfig={"maxTokens": 400, "temperature": 0.4}
     )
 
-    ai_reply = response["output"]["message"]["content"][0]["text"]
+    ai_text = response["output"]["message"]["content"][0]["text"]
     print("🧠 Claude suggestion received:")
-    print(ai_reply)
-    return ai_reply
+    print(ai_text)
+
+    try:
+        suggestion = json.loads(ai_text)
+    except json.JSONDecodeError:
+        suggestion = {"raw_text": ai_text}
+
+    # Save result
+    timestamp = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    out_file = OUTPUT_DIR / f"recommendation_{timestamp}.json"
+    with open(out_file, "w") as f:
+        json.dump(suggestion, f, indent=2)
+    print(f"💾 Saved recommendation to {out_file}")
+
+    return suggestion
 
 
-# ---------- Create the agent ----------
-agent = Agent(tools=[get_kpi_data, analyze_with_bedrock])
+# ---------- Tool 3: Digital Twin Simulation ----------
+from copy import deepcopy
 
-# ---------- Agent message ----------
+@tool
+def simulate_optimization(kpi_data: dict, suggestion: dict) -> dict:
+    """
+    Simulates applying Claude's suggested parameter change to KPI data.
+    Produces a before/after comparison to mimic a digital twin validation.
+    """
+    cells = deepcopy(kpi_data["cells"])
+    target = suggestion.get("target_cell")
+
+    # Define simple rule-based improvements
+    for cell in cells:
+        if cell["cell_id"] == target:
+            param = suggestion.get("parameter_to_adjust", "").lower()
+            val = suggestion.get("suggested_value")
+
+            if param == "ttt":
+                # Example: shorter TTT reduces handover failures
+                try:
+                    new_ttt = int(val)
+                    cell["ttt"] = new_ttt
+                    cell["hof"] = max(0, cell["hof"] - 2)
+                    cell["rlf"] = max(0, cell["rlf"] - 1)
+                except Exception:
+                    pass
+            elif "hyst" in param:
+                # Example: optimized hysteresis stabilizes RSRQ
+                cell["a3_hyst"] = float(val)
+                cell["rsrq"] += 1.0  # slight improvement
+                cell["hof"] = max(0, cell["hof"] - 1)
+
+    result = {"before": kpi_data, "after": {"cells": cells}}
+    print("🧩 Digital Twin simulation applied.")
+    return result
+
+
+
+# ---------- Create Agent ----------
+#agent = Agent(tools=[load_kpi_data, analyze_with_bedrock])
+agent = Agent(tools=[load_kpi_data, analyze_with_bedrock, simulate_optimization])
+
+
+# ---------- Agent Task ----------
+# message = """
+# Load the KPI data and analyze it using Bedrock to suggest a handover optimization.
+# """
+
+# result = agent(message, verbose=False)
+
+# print("\n🤖 Final agent output:")
+# #print(json.dumps(result, indent=2))
+# # ---------- Agent Task ----------
+# message = """
+# Load the KPI data and analyze it using Bedrock to suggest a handover optimization.
+# """
+
 message = """
-Load the KPI data and analyze it using Bedrock to suggest a handover optimization.
+1. Load the KPI data.
+2. Analyze it with Bedrock (Claude) to suggest an optimization.
+3. Apply that optimization using the digital twin simulation.
 """
 
 result = agent(message, verbose=False)
-print("\n🤖 Final agent output:")
-print(result)
+
+# Handle AgentResult object safely
+try:
+    # Strands AgentResult stores model reply under .content
+    output_text = result.content if hasattr(result, "content") else str(result)
+    print("\n🤖 Final agent output:")
+    print(output_text)
+except Exception as e:
+    print(f"⚠️ Could not print result cleanly: {e}")
+

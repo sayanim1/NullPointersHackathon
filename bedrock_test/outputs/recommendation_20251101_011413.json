@@ -1,0 +1,6 @@
+{
+  "target_cell": "C002",
+  "parameter_to_adjust": "a3_hyst",
+  "suggested_value": 4,
+  "reason": "Cell C002 has high handover failure (HOF=7) and radio link failure (RLF=4) rates, indicating potential mobility issues. Increasing the A3 hysteresis value can help stabilize the mobility and reduce unnecessary handovers."
+}
