@@ -1,3 +1,4 @@
+import random
 from fastapi import FastAPI
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -62,7 +63,43 @@ def run_agent_on_simulated_data():
     result = simulate_optimization(kpi_json, suggestion)
     return {"simulation_optimization": result, "suggestion": suggestion}
 
+def synth_labeling_rules(latency, packet_loss, throughput, num_users, signal_quality, cell_load):
+    
+    # target bandwidth
+    target_bandwidth = min(100.0, max(10.0, throughput/2.0 +num_users/20.0 + random.gauss(0, 2)))
 
+
+    # power adjustment
+    power_adjustment = float(max(-3.0, min(6.0, (-signal_quality)/3.0 + random.gauss(0, 0.5))))
+
+    # handover_threshold
+    handover_threshold = float(max(30.0, min(95.0, 50.0 + latency/4.0 - signal_quality/2.0 + random.gauss(0, 2))))
+
+    # slice_priority(categorical) - higher for highly loaded cells
+    if cell_load<50:
+        slice_priority = 1
+    elif cell_load<80:
+        slice_priority = 2
+    else:
+        slice_priority = 3
+
+    return {
+        "target_bandwidth": round(target_bandwidth, 2),
+        "power_adjustment": round(power_adjustment, 2),
+        "handover_threshold": round(handover_threshold, 2),
+        "slice_priority": int(slice_priority)
+    }
+
+@app.get("/generate_labeled_dataset")
+def generate_labeled_dataset(num_samples: int = 1000, save_csv:  bool = True):
+    rows = []
+    for i in range(num_samples):
+        latency = round(random.uniform(5, 250), 2)
+        packet_loss = round(random.uniform(0, 6), 3)
+        throughput = round(random.uniform(1, 500), 2)
+        num_users = random.randint(1, 500)
+        signal_quality = round(random.uniform(-20, 5), 2)
+        cell_load = round(random.uniform(5, 100), 2)
 
 @app.get("/")
 def root():
